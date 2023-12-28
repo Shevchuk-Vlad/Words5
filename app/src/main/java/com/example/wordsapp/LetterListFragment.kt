@@ -24,19 +24,20 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.wordsapp.data.SettingsDataStore
 import com.example.wordsapp.databinding.FragmentLetterListBinding
+import kotlinx.coroutines.launch
 
-/**
- * Entry fragment for the app. Displays a [RecyclerView] of letters.
- */
+
 class LetterListFragment : Fragment() {
     private var _binding: FragmentLetterListBinding? = null
 
-    // This property is only valid between onCreateView and
-    // onDestroyView.
+    private lateinit var SettingsDataStore: SettingsDataStore
     private val binding get() = _binding!!
 
     private lateinit var recyclerView: RecyclerView
@@ -64,6 +65,12 @@ class LetterListFragment : Fragment() {
         // Sets the LayoutManager of the recyclerview
         // On the first run of the app, it will be LinearLayoutManager
         chooseLayout()
+        SettingsDataStore = SettingsDataStore(requireContext())
+        SettingsDataStore.preferenceFlow.asLiveData().observe(viewLifecycleOwner) { value ->
+            isLinearLayoutManager = value
+            chooseLayout()
+            activity?.invalidateOptionsMenu()
+        }
     }
 
     /**
@@ -114,7 +121,9 @@ class LetterListFragment : Fragment() {
             R.id.action_switch_layout -> {
                 // Sets isLinearLayoutManager (a Boolean) to the opposite value
                 isLinearLayoutManager = !isLinearLayoutManager
-                // Sets layout and icon
+                lifecycleScope.launch {
+                    SettingsDataStore.saveLayoutToPreferencesStore(isLinearLayoutManager, requireContext())
+                }
                 chooseLayout()
                 setIcon(item)
 
